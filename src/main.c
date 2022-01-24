@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
     detexTexture** textures = NULL;
     // Check arguments
     if (argc < 3) {
-        fprintf(stderr, "Bad arguments: detext-convert <INPUT_FILE> <OUTPUT_FILE>");
+        fprintf(stderr, "Bad arguments: ritotex <INPUT_FILE> <OUTPUT_FILE>");
         return EXIT_FAILURE;
     }
     if (!read_textures(argv[1], &textures, &nu_levels, FILE_TYPE_NONE)) {
