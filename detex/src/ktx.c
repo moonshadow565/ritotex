@@ -107,6 +107,12 @@ bool detexLoadKTXFileWithMipmaps(const char *filename,
     }
     detexTexture **textures = (detexTexture **)malloc(sizeof(detexTexture *) * nu_mipmaps);
     for (int i = 0; i < nu_mipmaps; i++) {
+        int n = (extended_height / block_height) * (extended_width / block_width);
+        if (n == 0) {
+            // FIXME: something is wrong here
+            nu_mipmaps = i;
+            break;
+        }
         uint32_t image_size_buffer[1];
         size_t r = fread(image_size_buffer, 1, 4, f);
         if (r != 4) {
@@ -125,7 +131,6 @@ bool detexLoadKTXFileWithMipmaps(const char *filename,
             image_size_bytep[2] = temp;
         }
         int image_size = image_size_buffer[0];
-        int n = (extended_height / block_height) * (extended_width / block_width);
         if (image_size != n * bytes_per_block) {
             for (int j = 0; j < i; j++) free(textures[j]);
             free(textures);
