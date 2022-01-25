@@ -75,7 +75,7 @@ typedef struct {
 bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Could not open file %s", filename);
+        detexSetErrorMessage("detexFileLoadDDS: Could not open file %s", filename);
         return false;
     }
 
@@ -84,22 +84,22 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
 
     char magic[4];
     if (fread(magic, 1, 4, file) != 4 || memcmp(magic, "DDS ", 4) != 0) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Couldn't find DDS signature");
+        detexSetErrorMessage("detexFileLoadDDS: Couldn't find DDS signature");
         return false;
     }
 
     if (fread(&header, 1, sizeof(DDS_HEADER), file) != sizeof(DDS_HEADER)) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DDS file header %s", filename);
+        detexSetErrorMessage("detexFileLoadDDS: Error reading DDS file header %s", filename);
         return false;
     }
 
     if (strncmp(header.pixelFormat.fourCC, "DX10", 4) == 0) {
         if (fread(&dx10_header, 1, sizeof(DX10_HEADER), file) != sizeof(DX10_HEADER)) {
-            detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DX10 header %s", filename);
+            detexSetErrorMessage("detexFileLoadDDS: Error reading DX10 header %s", filename);
             return false;
         }
         if (dx10_header.resource_dimension != 3) {
-            detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Only 2D textures supported for .dds files");
+            detexSetErrorMessage("detexFileLoadDDS: Only 2D textures supported for .dds files");
             return false;
         }
     }
@@ -113,7 +113,7 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
                                                               header.pixelFormat.bitMaskB,
                                                               header.pixelFormat.bitMaskA);
     if (info == NULL) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Unsupported format in .dds file (DX10 format = %d).",
+        detexSetErrorMessage("detexFileLoadDDS: Unsupported format in .dds file (DX10 format = %d).",
                              dx10_header.format);
         return false;
     }
@@ -145,7 +145,7 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
             .height_in_blocks = height_in_blocks,
         };
         if (fread(textures[i]->data, 1, size, file) != size) {
-            detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
+            detexSetErrorMessage("detexFileLoadDDS: Error reading file %s", filename);
             return false;
         }
         // Divide by two for the next mipmap level, rounding down.
@@ -161,7 +161,7 @@ bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_leve
     const detexTextureFileInfo *info = detexLookupTextureFormatFileInfo(textures[0]->format);
 
     if (info == NULL || !info->dds_support) {
-        detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Could not match texture format with DDS file format");
+        detexSetErrorMessage("detexFileSaveDDS: Could not match texture format with DDS file format");
         return false;
     }
 
@@ -224,7 +224,7 @@ bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_leve
     FILE *file = fopen(filename, "wb");
 
     if (file == NULL) {
-        detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Could not open file %s for writing", filename);
+        detexSetErrorMessage("detexFileSaveDDS: Could not open file %s for writing", filename);
         return false;
     }
 

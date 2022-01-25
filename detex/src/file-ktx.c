@@ -48,33 +48,33 @@ typedef struct {
 bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Could not open KTX file %s", filename);
+        detexSetErrorMessage("detexFileLoadKTX: Could not open KTX file %s", filename);
         return false;
     }
 
     char magic[16];
     if (fread(magic, 1, 16, file) != 16 || memcmp(magic, KTX_MAGIC, 16) != 0) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Couldn't find KTX signature");
+        detexSetErrorMessage("detexFileLoadKTX: Couldn't find KTX signature");
         return false;
     }
 
     KTX_HEADER header;
     if (fread(&header, 1, sizeof(KTX_HEADER), file) != sizeof(KTX_HEADER)) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX header %s", filename);
+        detexSetErrorMessage("detexFileLoadKTX: Error reading KTX header %s", filename);
         return false;
     }
 
     const detexTextureFileInfo *info = detexLookupKTXFileInfo(header.glInternalFormat, header.glFormat, header.glType);
     if (info == NULL) {
         detexSetErrorMessage(
-            "detexLoadKTXFileWithMipmaps: Unsupported format in .ktx file "
+            "detexFileLoadKTX: Unsupported format in .ktx file "
             "(glInternalFormat = 0x%04X)",
             header.glInternalFormat);
         return false;
     }
 
     if (fseek(file, header.metada_size, SEEK_CUR) != 0) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX metadata %s", filename);
+        detexSetErrorMessage("detexFileLoadKTX: Error reading KTX metadata %s", filename);
         return false;
     }
 
@@ -92,7 +92,7 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
     for (int i = 0; i < nu_mipmaps; i++) {
         uint32_t correct_size;
         if (fread(&correct_size, 1, 4, file) != 4) {
-            detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX mipmap size %s", filename);
+            detexSetErrorMessage("detexFileLoadKTX: Error reading KTX mipmap size %s", filename);
             return false;
         }
         uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
@@ -100,7 +100,7 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
         uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
         if (size != correct_size) {
             detexSetErrorMessage(
-                "detexLoadKTXFileWithMipmaps: Error loading file %s: "
+                "detexFileLoadKTX: Error loading file %s: "
                 "Image size field of mipmap level %d should be %u but is %u",
                 filename,
                 i,
@@ -119,7 +119,7 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
             .height_in_blocks = height_in_blocks,
         };
         if (fread(textures[i]->data, 1, size, file) != size) {
-            detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
+            detexSetErrorMessage("detexFileLoadKTX: Error reading file %s", filename);
             return false;
         }
         // Divide by two for the next mipmap level, rounding down.
@@ -138,7 +138,7 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
 bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_levels) {
     const detexTextureFileInfo *info = detexLookupTextureFormatFileInfo(textures[0]->format);
     if (info == NULL || !info->ktx_support) {
-        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not match texture format with KTX file format");
+        detexSetErrorMessage("detexFileSaveKTX: Could not match texture format with KTX file format");
         return false;
     }
 
@@ -157,7 +157,7 @@ bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_leve
 
     FILE *file = fopen(filename, "wb");
     if (file == NULL) {
-        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open KTX file %s for writing", filename);
+        detexSetErrorMessage("detexFileSaveKTX: Could not open KTX file %s for writing", filename);
         return false;
     }
 

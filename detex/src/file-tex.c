@@ -26,19 +26,19 @@ typedef struct {
 bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
-        detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Could not open file %s", filename);
+        detexSetErrorMessage("detexFileLoadTEX: Could not open file %s", filename);
         return false;
     }
 
     TEX_HEADER header;
     if (fread(&header, 1, sizeof(TEX_HEADER), file) != sizeof(TEX_HEADER)) {
-        fprintf(stderr, "detexLoadTEXFileWithMipmaps: Couldn't read TEX header!\n");
+        fprintf(stderr, "detexFileLoadTEX: Couldn't read TEX header!\n");
         fclose(file);
         return false;
     }
 
     if (memcmp(header.magic, "TEX\0", 4) != 0) {
-        fprintf(stderr, "detexLoadTEXFileWithMipmaps: Not a valid tex file!\n");
+        fprintf(stderr, "detexFileLoadTEX: Not a valid tex file!\n");
         fclose(file);
         return false;
     }
@@ -57,7 +57,7 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
             // FIXME: figure what those are...
         default:
             // NOTE: technically riot handles all other formats as DXT1 ?????
-            detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Unhandled TEX format %d", header.tex_format);
+            detexSetErrorMessage("detexFileLoadTEX: Unhandled TEX format %d", header.tex_format);
             return false;
     }
 
@@ -86,7 +86,7 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
 
         // Read in texture
         if (fseek(file, -size, SEEK_CUR) != 0 || ftell(file) < sizeof(TEX_HEADER)) {
-            detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Can't read texture %d", i);
+            detexSetErrorMessage("detexFileLoadTEX: Can't read texture %d", i);
             return false;
         }
 
@@ -129,20 +129,20 @@ bool detexFileSaveTEX(const char *filename, detexTexture **textures, int nu_leve
             break;
         default:
             // FIXME: handle TEX_FORMAT_1, TEX_FORMAT_2 and TEX_FORMAT_3 here
-            detexSetErrorMessage("detexSaveTEXFileWithMipmaps: TEX doesn't support format %d", textures[0]->format);
+            detexSetErrorMessage("detexFileSaveTEX: TEX doesn't support format %d", textures[0]->format);
             return false;
     }
 
     int count_mipmaps = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
     if (count_mipmaps != nu_levels) {
         detexSetErrorMessage(
-            "detexSaveTEXFileWithMipmaps: Mipmap count doesn't match, expected: %d, got: %d", count_mipmaps, nu_levels);
+            "detexFileSaveTEX: Mipmap count doesn't match, expected: %d, got: %d", count_mipmaps, nu_levels);
         return false;
     }
 
     FILE *file = fopen(filename, "wb");
     if (!file) {
-        detexSetErrorMessage("detexSaveTEXFileWithMipmaps: Could not open file %s for writing", filename);
+        detexSetErrorMessage("detexFileSaveTEX: Could not open file %s for writing", filename);
         return false;
     }
 
