@@ -234,15 +234,9 @@ bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_leve
         fwrite(&dx10_header, 1, sizeof(DX10_HEADER), file);
     }
 
+    uint32_t bytes_per_block = detextBytesPerBlock(info->texture_format);
     for (int i = 0; i < nu_levels; i++) {
-        uint32_t bytes_per_block = detextBytesPerBlock(textures[i]->format);
-        uint32_t block_width = info->block_width;
-        uint32_t block_height = info->block_height;
-        uint32_t current_width = textures[i]->width;
-        uint32_t current_height = textures[i]->height;
-        uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
-        uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, 1);
-        uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
+        uint32_t size = textures[i]->width_in_blocks * textures[i]->height_in_blocks * bytes_per_block;
         fwrite(textures[i]->data, 1, size, file);
     }
 

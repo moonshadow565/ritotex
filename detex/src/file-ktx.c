@@ -27,7 +27,7 @@ static const char KTX_MAGIC[16] = "\xAB\x4B\x54\x58\x20\x31\x31\xBB\x0D\x0A\x1A\
 
 typedef struct {
     uint32_t glType;                // 04 glType
-    uint32_t typeSize;              // 05
+    uint32_t glTypeSize;            // 05 glTypeSize
     uint32_t glFormat;              // 06 glFormat
     uint32_t glInternalFormat;      // 07 glInternalFormat
     uint32_t glBaseInternalFormat;  // 08
@@ -136,97 +136,45 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
 
 // Save textures to KTX file (multiple mip-maps levels). Return true if succesful.
 bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_levels) {
-    /*
-    FILE *f = fopen(filename, "wb");
-    if (f == NULL) {
-        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open file %s for writing", filename);
-        return false;
-    }
-    uint32_t header[16];
-    memset(header, 0, 64);
-    memcpy(header, ktx_id, 12);  // Set id.
-    header[3] = 0x04030201;
     const detexTextureFileInfo *info = detexLookupTextureFormatFileInfo(textures[0]->format);
-    if (info == NULL) {
-        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not match texture format with file format");
-        return false;
-    }
-    if (!info->ktx_support) {
+    if (info == NULL || !info->ktx_support) {
         detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not match texture format with KTX file format");
         return false;
     }
-    int glType = 0;
-    int glTypeSize = 1;
-    int glFormat = 0;
-    glType = info->gl_type;
-    glFormat = info->gl_format;
-    int glInternalFormat = info->gl_internal_format;
-    header[4] = glType;      // glType
-    header[5] = glTypeSize;  // glTypeSize
-    header[6] = glFormat;    // glFormat
-    header[7] = glInternalFormat;
-    header[9] = textures[0]->width;
-    header[10] = textures[0]->height;
-    header[11] = 0;
-    header[13] = 1;          // Number of faces.
-    header[14] = nu_levels;  // Mipmap levels.
-    header[15] = 0;
-    size_t r = fwrite(header, 1, 64, f);
-    if (r != 64) {
-        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
+
+    KTX_HEADER header = {
+        .glType = info->gl_type,
+        .glTypeSize = 0,
+        .glFormat = info->gl_format,
+        .glInternalFormat = info->gl_internal_format,
+        .width = textures[0]->width,
+        .height = textures[0]->height,
+        .depth = 0,
+        .nu_faces = 1,
+        .nu_mipmaps = nu_levels,
+        .metada_size = 0,
+    };
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open KTX file %s for writing", filename);
         return false;
     }
 
-    int data[1] = {0};
+    fwrite(KTX_MAGIC, 1, 16, file);
+    fwrite(&header, 1, sizeof(KTX_HEADER), file);
+
+    uint32_t bytes_per_block = detextBytesPerBlock(info->texture_format);
     for (int i = 0; i < nu_levels; i++) {
-        uint32_t pixel_size = detexGetPixelSize(textures[i]->format);
-        // Block size is block size for compressed textures and the pixel size for
-        // uncompressed textures.
-        int n;
-        int block_size;
-        if (detexFormatIsCompressed(textures[i]->format)) {
-            n = textures[i]->width_in_blocks * textures[i]->height_in_blocks;
-            block_size = detexGetCompressedBlockSize(textures[i]->format);
-        } else {
-            n = textures[i]->width * textures[i]->height;
-            block_size = pixel_size;
-        }
-        //		if (!option_quiet)
-        //			printf("Writing mipmap level %d of size %d x %d.\n", i, textures[i]->width, textures[i]->height);
-        // Because of per row 32-bit alignment is mandated by the KTX specification, we have to handle
-        // special cases of unaligned uncompressed textures.
-        if (detexFormatIsCompressed(textures[i]->format) || (pixel_size & 3) == 0) {
-            // Regular 32-bit aligned texture.
-            data[0] = n * block_size;  // Image size.
-            size_t r1 = fwrite(data, 1, 4, f);
-            size_t r2 = fwrite(textures[i]->data, 1, n * block_size, f);
-            if (r1 != 4 || r2 != n * block_size) {
-                detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-                return false;
-            }
-        } else {
-            // Uncompressed texture with pixel size that is not a multiple of four.
-            int row_size = (textures[i]->width * pixel_size + 3) & (~3);
-            data[0] = textures[i]->height * row_size;  // Image size.
-            size_t r1 = fwrite(data, 1, 4, f);
-            if (r1 != 4) {
-                detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-                return false;
-            }
-            uint8_t *row = (uint8_t *)malloc(row_size);
-            for (int y = 0; y < textures[i]->height; y++) {
-                memcpy(row, &textures[i]->data[y * textures[i]->width * pixel_size], textures[i]->width * pixel_size);
-                for (int j = textures[i]->width * pixel_size; j < row_size; j++) row[j] = 0;
-                size_t r2 = fwrite(row, 1, row_size, f);
-                if (r2 != row_size) {
-                    detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-                    return false;
-                }
-            }
-            free(row);
+        uint32_t size = textures[i]->width_in_blocks * textures[i]->height_in_blocks * bytes_per_block;
+        fwrite(&size, 1, 4, file);
+        fwrite(textures[i]->data, 1, size, file);
+        uint32_t unaligned = size % 4;
+        if (unaligned > 0) {
+            fwrite("\0\0\0", 1, 4 - unaligned, file);
         }
     }
-    fclose(f);
-    */
+
+    fclose(file);
     return true;
 }
