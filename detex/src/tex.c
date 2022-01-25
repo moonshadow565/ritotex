@@ -25,10 +25,7 @@ typedef struct {
     bool has_mipmaps;
 } TEX_HEADER;
 
-bool detexLoadTEXFileWithMipmaps(const char *filename,
-                                 int max_mipmaps,
-                                 detexTexture ***textures_out,
-                                 int *nu_levels_out) {
+bool detexLoadTEXFile(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Could not open file %s", filename);
@@ -114,17 +111,7 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
     return true;
 }
 
-bool detexLoadTEXFile(const char *filename, detexTexture **texture_out) {
-    int nu_mipmaps;
-    detexTexture **textures;
-    bool r = detexLoadTEXFileWithMipmaps(filename, 1, &textures, &nu_mipmaps);
-    if (!r) return false;
-    *texture_out = textures[0];
-    free(textures);
-    return true;
-}
-
-bool detexSaveTEXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexSaveTEXFile(detexTexture **textures, int nu_levels, const char *filename) {
     TEX_HEADER header = {
         .magic = "TEX",
         .image_width = textures[0]->width,
@@ -172,10 +159,4 @@ bool detexSaveTEXFileWithMipmaps(detexTexture **textures, int nu_levels, const c
 
     fclose(file);
     return true;
-}
-
-bool detexSaveTEXFile(detexTexture *texture, const char *filename) {
-    detexTexture *textures[1];
-    textures[0] = texture;
-    return detexSaveTEXFileWithMipmaps(textures, 1, filename);
 }

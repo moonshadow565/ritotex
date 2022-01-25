@@ -29,10 +29,7 @@ static const uint8_t ktx_id[12] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xB
 // textures_out is a return parameter for an array of detexTexture pointers that is allocated,
 // free with free(). textures_out[i] are allocated textures corresponding to each level, free
 // with free();
-bool detexLoadKTXFileWithMipmaps(const char *filename,
-                                 int max_mipmaps,
-                                 detexTexture ***textures_out,
-                                 int *nu_levels_out) {
+bool detexLoadKTXFile(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *f = fopen(filename, "rb");
     if (f == NULL) {
         detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Could not open file %s", filename);
@@ -193,7 +190,7 @@ static const char ktx_orientation_key_up[24] = {
 };
 
 // Save textures to KTX file (multiple mip-maps levels). Return true if succesful.
-bool detexSaveKTXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexSaveKTXFile(detexTexture **textures, int nu_levels, const char *filename) {
     FILE *f = fopen(filename, "wb");
     if (f == NULL) {
         detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open file %s for writing", filename);

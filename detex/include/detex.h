@@ -662,35 +662,35 @@ DETEX_API void detexConvertHDRFloatToFloat(float *buffer, int n);
 /* textures_out is a return parameter for an array of detexTexture pointers that is allocated, */
 /* free with free(). textures_out[i] are allocated textures corresponding to each level, free */
 /* with free().	 */
-DETEX_API bool detexLoadKTXFileWithMipmaps(const char *filename,
-                                           int max_mipmaps,
-                                           detexTexture ***textures_out,
-                                           int *nu_levels_out);
+DETEX_API bool detexLoadKTXFile(const char *filename,
+                                int max_mipmaps,
+                                detexTexture ***textures_out,
+                                int *nu_levels_out);
 
 /* Save textures to KTX file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveKTXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexSaveKTXFile(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Load texture from DDS file with mip-maps. Returns true if successful. */
 /* nu_levels is a return parameter that returns the number of mipmap levels found. */
 /* textures_out is a return parameter for an array of detexTexture pointers that is allocated, */
 /* free with free(). textures_out[i] are allocated textures corresponding to each level, free */
 /* with free(). */
-DETEX_API bool detexLoadDDSFileWithMipmaps(const char *filename,
-                                           int max_mipmaps,
-                                           detexTexture ***textures_out,
-                                           int *nu_levels_out);
+DETEX_API bool detexLoadDDSFile(const char *filename,
+                                int max_mipmaps,
+                                detexTexture ***textures_out,
+                                int *nu_levels_out);
 
 /* Save textures to DDS file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveDDSFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexSaveDDSFile(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Load TEX file (multiple mip-maps levels). Returs true if succesful. */
-DETEX_API bool detexLoadTEXFileWithMipmaps(const char *filename,
-                                           int max_mipmaps,
-                                           detexTexture ***textures_out,
-                                           int *nu_levels_out);
+DETEX_API bool detexLoadTEXFile(const char *filename,
+                                int max_mipmaps,
+                                detexTexture ***textures_out,
+                                int *nu_levels_out);
 
 /* Save textures to TEX file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveTEXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexSaveTEXFile(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Load texture from raw file (first mip-map only) given the format and dimensions */
 /* in texture. Returns true if successful. */

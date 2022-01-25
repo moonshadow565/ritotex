@@ -159,17 +159,17 @@ static bool read_textures(char* in_filename, detexTexture*** textures, int* nu_l
     }
     switch (in_file_type) {
         case FILE_TYPE_KTX:
-            if (!detexLoadKTXFileWithMipmaps(in_filename, 32, textures, nu_levels)) {
+            if (!detexLoadKTXFile(in_filename, 32, textures, nu_levels)) {
                 return false;
             }
             break;
         case FILE_TYPE_DDS:
-            if (!detexLoadDDSFileWithMipmaps(in_filename, 32, textures, nu_levels)) {
+            if (!detexLoadDDSFile(in_filename, 32, textures, nu_levels)) {
                 return false;
             }
             break;
         case FILE_TYPE_TEX:
-            if (!detexLoadTEXFileWithMipmaps(in_filename, 32, textures, nu_levels)) {
+            if (!detexLoadTEXFile(in_filename, 32, textures, nu_levels)) {
                 return false;
             }
             break;
@@ -189,7 +189,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_ktx)) {
                 return false;
             }
-            if (!detexSaveKTXFileWithMipmaps(textures, nu_levels, out_filename)) {
+            if (!detexSaveKTXFile(textures, nu_levels, out_filename)) {
                 return false;
             }
             break;
@@ -197,7 +197,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_dds)) {
                 return false;
             }
-            if (!detexSaveDDSFileWithMipmaps(textures, nu_levels, out_filename)) {
+            if (!detexSaveDDSFile(textures, nu_levels, out_filename)) {
                 return false;
             }
             break;
@@ -205,7 +205,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_tex)) {
                 return false;
             }
-            if (!detexSaveTEXFileWithMipmaps(textures, nu_levels, out_filename)) {
+            if (!detexSaveTEXFile(textures, nu_levels, out_filename)) {
                 return false;
             }
             break;
