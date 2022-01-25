@@ -355,30 +355,3 @@ end:
     *alpha_mask_out = alpha_mask;
     return true;
 }
-
-// Load texture file (type autodetected from extension) with mipmaps.
-bool detexLoadTextureFileWithMipmaps(const char *filename,
-                                     int max_mipmaps,
-                                     detexTexture ***textures_out,
-                                     int *nu_levels_out) {
-    int filename_length = strlen(filename);
-    if (filename_length > 4 && strcasecmp(filename + filename_length - 4, ".ktx") == 0)
-        return detexLoadKTXFileWithMipmaps(filename, max_mipmaps, textures_out, nu_levels_out);
-    else if (filename_length > 4 && strcasecmp(filename + filename_length - 4, ".dds") == 0)
-        return detexLoadDDSFileWithMipmaps(filename, max_mipmaps, textures_out, nu_levels_out);
-    else {
-        detexSetErrorMessage("detexLoadTextureFileWithMipmaps: Do not recognize filename extension");
-        return false;
-    }
-}
-
-// Load texture file (type autodetected from extension).
-bool detexLoadTextureFile(const char *filename, detexTexture **texture_out) {
-    int nu_mipmaps;
-    detexTexture **textures;
-    bool r = detexLoadTextureFileWithMipmaps(filename, 1, &textures, &nu_mipmaps);
-    if (!r) return false;
-    *texture_out = textures[0];
-    free(textures);
-    return true;
-}

@@ -180,18 +180,6 @@ bool detexLoadKTXFileWithMipmaps(const char *filename,
     return true;
 }
 
-// Load texture from KTX file (first mip-map only). Returns true if successful.
-// The texture is allocated, free with free().
-bool detexLoadKTXFile(const char *filename, detexTexture **texture_out) {
-    int nu_mipmaps;
-    detexTexture **textures;
-    bool r = detexLoadKTXFileWithMipmaps(filename, 1, &textures, &nu_mipmaps);
-    if (!r) return false;
-    *texture_out = textures[0];
-    free(textures);
-    return true;
-}
-
 enum { DETEX_ORIENTATION_DOWN = 1, DETEX_ORIENTATION_UP = 2 };
 
 static const char ktx_orientation_key_down[24] = {
@@ -320,11 +308,4 @@ bool detexSaveKTXFileWithMipmaps(detexTexture **textures, int nu_levels, const c
     }
     fclose(f);
     return true;
-}
-
-// Save texture to KTX file (single mip-map level). Returns true if succesful.
-bool detexSaveKTXFile(detexTexture *texture, const char *filename) {
-    detexTexture *textures[1];
-    textures[0] = texture;
-    return detexSaveKTXFileWithMipmaps(textures, 1, filename);
 }

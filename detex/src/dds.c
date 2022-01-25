@@ -31,7 +31,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define DDS_SURFACE_FLAGS_TEXTURE 0x00001000  // DDSCAPS_TEXTURE
 #define DDS_SURFACE_FLAGS_MIPMAP 0x00400008   // DDSCAPS_COMPLEX | DDSCAPS_MIPMAP
 
-#define DDS_MAGIC ((uint8_t[4]){'D', 'D', 'S', ' '})
+static const char DDS_MAGIC[4] = {'D', 'D', 'S', ' '};
 
 typedef struct {
     uint32_t size;         // 072
@@ -91,7 +91,7 @@ bool detexLoadDDSFileWithMipmaps(const char *filename,
         return false;
     }
 
-    if (memcmp(header.magic, "DDS ", 4) != 0) {
+    if (memcmp(header.magic, DDS_MAGIC, sizeof(DDS_MAGIC)) != 0) {
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Couldn't find DDS signature");
         return false;
     }
@@ -159,20 +159,6 @@ bool detexLoadDDSFileWithMipmaps(const char *filename,
     return true;
 }
 
-// Load texture from DDS file (first mip-map only). Returns true if successful.
-// The texture is allocated, free with free().
-bool detexLoadDDSFile(const char *filename, detexTexture **texture_out) {
-    int nu_mipmaps;
-    detexTexture **textures;
-    bool r = detexLoadDDSFileWithMipmaps(filename, 1, &textures, &nu_mipmaps);
-    if (!r) return false;
-    *texture_out = textures[0];
-    free(textures);
-    return true;
-}
-
-static const char dds_id[4] = {'D', 'D', 'S', ' '};
-
 // Save textures to DDS file (multiple mip-maps levels). Return true if succesful.
 bool detexSaveDDSFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename) {
     FILE *f = fopen(filename, "wb");
@@ -189,7 +175,7 @@ bool detexSaveDDSFileWithMipmaps(detexTexture **textures, int nu_levels, const c
         detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Could not match texture format with DDS file format");
         return false;
     }
-    size_t r = fwrite(dds_id, 1, 4, f);
+    size_t r = fwrite(DDS_MAGIC, 1, 4, f);
     if (r != 4) {
         detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Error writing to file %s", filename);
         return false;
@@ -293,11 +279,4 @@ bool detexSaveDDSFileWithMipmaps(detexTexture **textures, int nu_levels, const c
     }
     fclose(f);
     return true;
-}
-
-// Save texture to DDS file (single mip-map level). Returns true if succesful.
-bool detexSaveDDSFile(detexTexture *texture, const char *filename) {
-    detexTexture *textures[1];
-    textures[0] = texture;
-    return detexSaveDDSFileWithMipmaps(textures, 1, filename);
 }
