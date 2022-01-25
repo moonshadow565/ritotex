@@ -5,8 +5,6 @@
 
 #include "detex.h"
 
-#define tex_magic "TEX"
-
 enum {
     TEX_FORMAT_1 = 1,
     TEX_FORMAT_2 = 2,
@@ -39,7 +37,7 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
         return false;
     }
 
-    if (memcmp(header.magic, tex_magic, 4) != 0) {
+    if (memcmp(header.magic, "TEX\0", 4) != 0) {
         fprintf(stderr, "detexLoadTEXFileWithMipmaps: Not a valid tex file!\n");
         fclose(file);
         return false;
@@ -113,7 +111,7 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
 
 bool detexFileSaveTEX(const char *filename, detexTexture **textures, int nu_levels) {
     TEX_HEADER header = {
-        .magic = "TEX",
+        .magic = "TEX\0",
         .image_width = textures[0]->width,
         .image_height = textures[0]->height,
         .unk1 = 1,

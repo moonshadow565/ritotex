@@ -22,7 +22,23 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "detex.h"
 
-static const uint8_t ktx_id[12] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A};
+// NOBODY CARES ABOUT BIG ENDIAN
+static const char KTX_MAGIC[16] = "\xAB\x4B\x54\x58\x20\x31\x31\xBB\x0D\x0A\x1A\x0A\x01\x02\x03\x04";
+
+typedef struct {
+    uint32_t glType;                // 04 glType
+    uint32_t typeSize;              // 05
+    uint32_t glFormat;              // 06 glFormat
+    uint32_t glInternalFormat;      // 07 glInternalFormat
+    uint32_t glBaseInternalFormat;  // 08
+    uint32_t width;                 // 09 width
+    uint32_t height;                // 10 height
+    uint32_t depth;                 // 11
+    uint32_t nu_elements;           // 12
+    uint32_t nu_faces;              // 13
+    uint32_t nu_mipmaps;            // 14 nu_file_mipmaps
+    uint32_t metada_size;           // 15
+} KTX_HEADER;
 
 // Load texture from KTX file with mip-maps. Returns true if successful.
 // nu_mipmaps is a return parameter that returns the number of mipmap levels found.
@@ -30,155 +46,97 @@ static const uint8_t ktx_id[12] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xB
 // free with free(). textures_out[i] are allocated textures corresponding to each level, free
 // with free();
 bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
-    FILE *f = fopen(filename, "rb");
-    if (f == NULL) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Could not open file %s", filename);
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Could not open KTX file %s", filename);
         return false;
     }
-    int header[16];
-    size_t s = fread(header, 1, 64, f);
-    if (s != 64) {
-        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
-        return false;
-    }
-    if (memcmp(header, ktx_id, 12) != 0) {
-        // KTX signature not found.
+
+    char magic[16];
+    if (fread(magic, 1, 16, file) != 16 || memcmp(magic, KTX_MAGIC, 16) != 0) {
         detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Couldn't find KTX signature");
         return false;
     }
-    int wrong_endian = 0;
-    if (header[3] == 0x01020304) {
-        // Wrong endian .ktx file.
-        wrong_endian = 1;
-        for (int i = 3; i < 16; i++) {
-            uint8_t *b = (uint8_t *)&header[i];
-            uint8_t temp = b[0];
-            b[0] = b[3];
-            b[3] = temp;
-            temp = b[1];
-            b[1] = b[2];
-            b[2] = temp;
-        }
+
+    KTX_HEADER header;
+    if (fread(&header, 1, sizeof(KTX_HEADER), file) != sizeof(KTX_HEADER)) {
+        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX header %s", filename);
+        return false;
     }
-    int glType = header[4];
-    int glFormat = header[6];
-    int glInternalFormat = header[7];
-    //	int pixel_depth = header[11];
-    const detexTextureFileInfo *info = detexLookupKTXFileInfo(glInternalFormat, glFormat, glType);
+
+    const detexTextureFileInfo *info = detexLookupKTXFileInfo(header.glInternalFormat, header.glFormat, header.glType);
     if (info == NULL) {
         detexSetErrorMessage(
             "detexLoadKTXFileWithMipmaps: Unsupported format in .ktx file "
             "(glInternalFormat = 0x%04X)",
-            glInternalFormat);
+            header.glInternalFormat);
         return false;
     }
-    int bytes_per_block;
-    if (detexFormatIsCompressed(info->texture_format))
-        bytes_per_block = detexGetCompressedBlockSize(info->texture_format);
-    else
-        bytes_per_block = detexGetPixelSize(info->texture_format);
-    int block_width = info->block_width;
-    int block_height = info->block_height;
-    //	printf("File is %s texture.\n", info->text1);
-    int width = header[9];
-    int height = header[10];
-    int extended_width = ((width + block_width - 1) / block_width) * block_width;
-    int extended_height = ((height + block_height - 1) / block_height) * block_height;
-    int nu_file_mipmaps = header[14];
-    //	if (nu_file_mipmaps > 1 && max_mipmaps == 1) {
-    //		detexSetErrorMessage("Disregarding mipmaps beyond the first level.\n");
-    //	}
-    int nu_mipmaps;
-    if (nu_file_mipmaps > max_mipmaps)
-        nu_mipmaps = max_mipmaps;
-    else
-        nu_mipmaps = nu_file_mipmaps;
-    if (header[15] > 0) {
-        // Skip metadata.
-        uint8_t *metadata = (unsigned char *)malloc(header[15]);
-        if (fread(metadata, 1, header[15], f) < header[15]) {
-            detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
-            return false;
-        }
-        free(metadata);
+
+    if (fseek(file, header.metada_size, SEEK_CUR) != 0) {
+        detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX metadata %s", filename);
+        return false;
     }
-    detexTexture **textures = (detexTexture **)malloc(sizeof(detexTexture *) * nu_mipmaps);
+
+    int nu_mipmaps = min(header.nu_mipmaps, max_mipmaps);
+    *nu_levels_out = nu_mipmaps;
+
+    detexTexture **textures = (detexTexture **)calloc(nu_mipmaps, sizeof(detexTexture *));
+    *textures_out = textures;
+
+    uint32_t bytes_per_block = detextBytesPerBlock(info->texture_format);
+    uint32_t block_width = info->block_width;
+    uint32_t block_height = info->block_height;
+    uint32_t current_width = header.width;
+    uint32_t current_height = header.height;
     for (int i = 0; i < nu_mipmaps; i++) {
-        int n = (extended_height / block_height) * (extended_width / block_width);
-        if (n == 0) {
-            // FIXME: something is wrong here
-            nu_mipmaps = i;
-            break;
-        }
-        uint32_t image_size_buffer[1];
-        size_t r = fread(image_size_buffer, 1, 4, f);
-        if (r != 4) {
-            for (int j = 0; j < i; j++) free(textures[j]);
-            free(textures);
-            detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
+        uint32_t correct_size;
+        if (fread(&correct_size, 1, 4, file) != 4) {
+            detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading KTX mipmap size %s", filename);
             return false;
         }
-        if (wrong_endian) {
-            uint8_t *image_size_bytep = (uint8_t *)&image_size_buffer[0];
-            unsigned char temp = image_size_buffer[0];
-            image_size_bytep[0] = image_size_bytep[3];
-            image_size_bytep[3] = temp;
-            temp = image_size_bytep[1];
-            image_size_bytep[1] = image_size_bytep[2];
-            image_size_bytep[2] = temp;
-        }
-        int image_size = image_size_buffer[0];
-        if (image_size != n * bytes_per_block) {
-            for (int j = 0; j < i; j++) free(textures[j]);
-            free(textures);
+        uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
+        uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, 1);
+        uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
+        if (size != correct_size) {
             detexSetErrorMessage(
                 "detexLoadKTXFileWithMipmaps: Error loading file %s: "
-                "Image size field of mipmap level %d does not match (%d vs %d)",
+                "Image size field of mipmap level %d should be %u but is %u",
                 filename,
                 i,
-                image_size,
-                n * bytes_per_block);
+                correct_size,
+                size);
             return false;
         }
         // Allocate texture.
         textures[i] = (detexTexture *)malloc(sizeof(detexTexture));
-        textures[i]->format = info->texture_format;
-        textures[i]->data = (uint8_t *)malloc(n * bytes_per_block);
-        textures[i]->width = width;
-        textures[i]->height = height;
-        textures[i]->width_in_blocks = extended_width / block_width;
-        textures[i]->height_in_blocks = extended_height / block_height;
-        if (fread(textures[i]->data, 1, n * bytes_per_block, f) < n * bytes_per_block) {
-            for (int j = 0; j <= i; j++) free(textures[j]);
-            free(textures);
+        *textures[i] = (detexTexture){
+            .format = info->texture_format,
+            .data = (uint8_t *)malloc(size),
+            .width = current_width,
+            .height = current_height,
+            .width_in_blocks = width_in_blocks,
+            .height_in_blocks = height_in_blocks,
+        };
+        if (fread(textures[i]->data, 1, size, file) != size) {
             detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
             return false;
         }
         // Divide by two for the next mipmap level, rounding down.
-        width >>= 1;
-        height >>= 1;
-        extended_width = ((width + block_width - 1) / block_width) * block_width;
-        extended_height = ((height + block_height - 1) / block_height) * block_height;
-        // Read mipPadding. But not if we have already read everything specified.
-        char buffer[4];
-        if (i + 1 < nu_mipmaps) {
-            int nu_bytes = 3 - ((image_size + 3) % 4);
-            if (fread(buffer, 1, nu_bytes, f) != nu_bytes) {
-                for (int j = 0; j <= i; j++) free(textures[j]);
-                free(textures);
-                detexSetErrorMessage("detexLoadKTXFileWithMipmaps: Error reading file %s", filename);
-                return false;
-            }
+        current_width >>= 1;
+        current_height >>= 1;
+        uint32_t unaligned = size % 4;
+        if (unaligned > 0) {
+            fseek(file, 4 - unaligned, SEEK_CUR);
         }
     }
-    fclose(f);
-    *nu_levels_out = nu_mipmaps;
-    *textures_out = textures;
+    fclose(file);
     return true;
 }
 
 // Save textures to KTX file (multiple mip-maps levels). Return true if succesful.
 bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_levels) {
+    /*
     FILE *f = fopen(filename, "wb");
     if (f == NULL) {
         detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open file %s for writing", filename);
@@ -269,5 +227,6 @@ bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_leve
         }
     }
     fclose(f);
+    */
     return true;
 }

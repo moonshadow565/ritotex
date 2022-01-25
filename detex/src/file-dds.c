@@ -51,7 +51,6 @@ typedef struct {
 } DX10_HEADER;
 
 typedef struct {
-    char magic[4];                // 000
     uint32_t size;                // 000
     uint32_t flags;               // 004
     uint32_t height;              // 008
@@ -74,8 +73,8 @@ typedef struct {
 // free with free(). textures_out[i] are allocated textures corresponding to each level, free
 // with free();
 bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
-    FILE *f = fopen(filename, "rb");
-    if (f == NULL) {
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Could not open file %s", filename);
         return false;
     }
@@ -83,18 +82,19 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
     DDS_HEADER header = {0};
     DX10_HEADER dx10_header = {0};
 
-    if (fread(&header, 1, sizeof(DDS_HEADER), f) != sizeof(DDS_HEADER)) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DDS file header %s", filename);
-        return false;
-    }
-
-    if (memcmp(header.magic, "DDS ", 4) != 0) {
+    char magic[4];
+    if (fread(magic, 1, 4, file) != 4 || memcmp(magic, "DDS ", 4) != 0) {
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Couldn't find DDS signature");
         return false;
     }
 
+    if (fread(&header, 1, sizeof(DDS_HEADER), file) != sizeof(DDS_HEADER)) {
+        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DDS file header %s", filename);
+        return false;
+    }
+
     if (strncmp(header.pixelFormat.fourCC, "DX10", 4) == 0) {
-        if (fread(&dx10_header, 1, sizeof(DX10_HEADER), f) != sizeof(DX10_HEADER)) {
+        if (fread(&dx10_header, 1, sizeof(DX10_HEADER), file) != sizeof(DX10_HEADER)) {
             detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DX10 header %s", filename);
             return false;
         }
@@ -144,7 +144,7 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
             .width_in_blocks = width_in_blocks,
             .height_in_blocks = height_in_blocks,
         };
-        if (fread(textures[i]->data, 1, size, f) != size) {
+        if (fread(textures[i]->data, 1, size, file) != size) {
             detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
             return false;
         }
@@ -152,7 +152,7 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
         current_width >>= 1;
         current_height >>= 1;
     }
-    fclose(f);
+    fclose(file);
     return true;
 }
 
@@ -166,8 +166,7 @@ bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_leve
     }
 
     DDS_HEADER header = {
-        .magic = "DDS ",
-        .size = sizeof(DDS_HEADER) - 4,
+        .size = sizeof(DDS_HEADER),
         .flags = DDS_HEADER_FLAGS_TEXTURE,
         .width = textures[0]->width,
         .height = textures[0]->height,
@@ -229,6 +228,7 @@ bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_leve
         return false;
     }
 
+    fwrite("DDS ", 1, 4, file);
     fwrite(&header, 1, sizeof(DDS_HEADER), file);
     if (strncmp(info->dx_four_cc, "DX10", 4) == 0) {
         fwrite(&dx10_header, 1, sizeof(DX10_HEADER), file);
