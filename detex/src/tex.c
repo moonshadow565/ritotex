@@ -73,7 +73,8 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
 
     // TODO: log if clz method yields same result here
     // NOTE: this might actually be faster than clz
-    int nu_levels = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
+    uint32_t count_mipmaps = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
+    uint32_t nu_levels = min(max_mipmaps, count_mipmaps);
     *nu_levels_out = nu_levels;
     detexTexture **textures = malloc(nu_levels * sizeof(detexTexture *));
     *textures_out = textures;
@@ -84,8 +85,8 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
 
     for (int i = 0; i < nu_levels; ++i) {
         // Calculate sizes
-        uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, block_width);
-        uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, block_height);
+        uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
+        uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, 1);
         uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
 
         // Read in texture
