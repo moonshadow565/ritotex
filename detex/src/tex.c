@@ -48,13 +48,13 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
         return false;
     }
 
-    uint32_t format = DETEX_COMPRESSED_TEXTURE_FORMAT_INDEX_DXT1;
+    uint32_t format = DETEX_TEXTURE_FORMAT_BC1;
     switch (header.tex_format) {
         case 10:
-            format = DETEX_COMPRESSED_TEXTURE_FORMAT_INDEX_DXT1;
+            format = DETEX_TEXTURE_FORMAT_BC1;
             break;
         case 12:
-            format = DETEX_COMPRESSED_TEXTURE_FORMAT_INDEX_DXT5;
+            format = DETEX_TEXTURE_FORMAT_BC3;
             break;
         case TEX_FORMAT_1:
         case TEX_FORMAT_2:
