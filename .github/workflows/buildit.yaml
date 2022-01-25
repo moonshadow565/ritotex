@@ -1,0 +1,25 @@
+name: BuildIt
+on:
+  push:
+    branch:
+      - 'master'
+      - 'test'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - name: "Clone source"
+      uses: actions/checkout@v2
+    - name: "Setup msvc"
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: "Build"
+      run: |
+        mkdir build
+        cd build
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ..
+        cmake --build .
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: "build/ritotex.exe"
