@@ -730,13 +730,6 @@ DETEX_INLINE_ONLY uint32_t detexGetComponentPrecision(uint32_t pixel_format) {
            ((pixel_format & DETEX_PIXEL_FORMAT_FLOAT_BIT) != 0) * 5 * (1 + (detexGetComponentSize(pixel_format) == 4));
 }
 
-/* Return the total size of a compressed texture. */
-DETEX_INLINE_ONLY uint32_t detexTextureSize(uint32_t width_in_blocks,
-                                            uint32_t height_in_blocks,
-                                            uint32_t pixel_format) {
-    return width_in_blocks * height_in_blocks * detexGetPixelSize(pixel_format) * 16;
-}
-
 /* Return whether a pixel or texture format has an alpha component. */
 DETEX_INLINE_ONLY uint32_t detexFormatHasAlpha(uint32_t pixel_format) {
     return (pixel_format & DETEX_PIXEL_FORMAT_ALPHA_COMPONENT_BIT) != 0;
@@ -759,6 +752,20 @@ DETEX_INLINE_ONLY uint32_t detexFormatIsCompressed(uint32_t texture_format) {
 DETEX_INLINE_ONLY uint32_t detexGetPixelFormat(uint32_t texture_format) {
     return texture_format & DETEX_TEXTURE_FORMAT_PIXEL_FORMAT_MASK;
 }
+
+/* Return bytes per pixel for format. */
+DETEX_INLINE_ONLY uint32_t detextBytesPerBlock(uint32_t texture_format) {
+    return detexFormatIsCompressed(texture_format) ? detexGetCompressedBlockSize(texture_format)
+                                                   : detexGetPixelSize(texture_format);
+}
+
+// FIXME: 16 in here is obviously hardcoded and wrong for abitrary formats
+///* Return the total size of a compressed texture. */
+// DETEX_INLINE_ONLY uint32_t detexTextureSize(uint32_t width_in_blocks,
+//                                             uint32_t height_in_blocks,
+//                                             uint32_t pixel_format) {
+//     return width_in_blocks * height_in_blocks * detexGetPixelSize(pixel_format) * 16;
+// }
 
 DETEX_DATA const uint8_t detex_clamp0to255_table[767];
 
