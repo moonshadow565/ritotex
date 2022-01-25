@@ -177,18 +177,6 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
     return true;
 }
 
-enum { DETEX_ORIENTATION_DOWN = 1, DETEX_ORIENTATION_UP = 2 };
-
-static const char ktx_orientation_key_down[24] = {
-    'K', 'T', 'X', 'o', 'r', 'i', 'e', 'n', 't', 'a', 't', 'i',
-    'o', 'n', 0,   'S', '=', 'r', ',', 'T', '=', 'd', 0,   0  // Includes one byte of padding.
-};
-
-static const char ktx_orientation_key_up[24] = {
-    'K', 'T', 'X', 'o', 'r', 'i', 'e', 'n', 't', 'a', 't', 'i',
-    'o', 'n', 0,   'S', '=', 'r', ',', 'T', '=', 'u', 0,   0  // Includes one byte of padding.
-};
-
 // Save textures to KTX file (multiple mip-maps levels). Return true if succesful.
 bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_levels) {
     FILE *f = fopen(filename, "wb");
@@ -224,37 +212,14 @@ bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_leve
     header[11] = 0;
     header[13] = 1;          // Number of faces.
     header[14] = nu_levels;  // Mipmap levels.
-    int data[1];
-    const int option_orientation = 0;
-    if (option_orientation == 0) {
-        header[15] = 0;
-        size_t r = fwrite(header, 1, 64, f);
-        if (r != 64) {
-            detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-            return false;
-        }
-    } else {
-        header[15] = 28;  // Key value data bytes.
-        size_t r = fwrite(header, 1, 64, f);
-        if (r != 64) {
-            detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-            return false;
-        }
-        data[0] = 27;  // Key and value size.
-        r = fwrite(data, 1, 4, f);
-        if (r != 4) {
-            detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-            return false;
-        }
-        if (option_orientation == DETEX_ORIENTATION_DOWN)
-            r = fwrite(ktx_orientation_key_down, 1, 24, f);
-        else
-            r = fwrite(ktx_orientation_key_up, 1, 24, f);
-        if (r != 24) {
-            detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
-            return false;
-        }
+    header[15] = 0;
+    size_t r = fwrite(header, 1, 64, f);
+    if (r != 64) {
+        detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Error writing to file %s", filename);
+        return false;
     }
+
+    int data[1] = {0};
     for (int i = 0; i < nu_levels; i++) {
         uint32_t pixel_size = detexGetPixelSize(textures[i]->format);
         // Block size is block size for compressed textures and the pixel size for
