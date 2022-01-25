@@ -22,6 +22,52 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "detex.h"
 
+#define DDS_HEADER_FLAGS_TEXTURE 0x00001007     // DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT
+#define DDS_HEADER_FLAGS_LINEARSIZE 0x00080000  // DDSD_LINEARSIZE
+#define DDS_HEADER_FLAGS_MIPMAP 0x00020000      // DDSD_MIPMAPCOUNT
+
+#define DDS_FOURCC 0x00000004  // DDPF_FOURCC
+
+#define DDS_SURFACE_FLAGS_TEXTURE 0x00001000  // DDSCAPS_TEXTURE
+#define DDS_SURFACE_FLAGS_MIPMAP 0x00400008   // DDSCAPS_COMPLEX | DDSCAPS_MIPMAP
+
+#define DDS_MAGIC ((uint8_t[4]){'D', 'D', 'S', ' '})
+
+typedef struct {
+    uint32_t size;         // 072
+    uint32_t flags;        // 076
+    char fourCC[4];        // 080
+    uint32_t bitCountRGB;  // 084
+    uint32_t bitMaskR;     // 088
+    uint32_t bitMaskG;     // 092
+    uint32_t bitMaskB;     // 096
+    uint32_t bitMaskA;     // 100
+} DDS_PIXELFORMAT;
+
+typedef struct {
+    uint32_t format;
+    uint32_t resource_dimension;
+    uint32_t unk[3];
+} DX10_HEADER;
+
+typedef struct {
+    char magic[4];                // 000
+    uint32_t size;                // 000
+    uint32_t flags;               // 004
+    uint32_t height;              // 008
+    uint32_t width;               // 012
+    uint32_t pitchOrLinearSize;   // 016
+    uint32_t depth;               // 020
+    uint32_t mipMapCount;         // 024
+    uint32_t reserved1[11];       // 028
+    DDS_PIXELFORMAT pixelFormat;  // 072
+    uint32_t caps;                // 104
+    uint32_t caps2;               // 108
+    uint32_t caps3;               // 112
+    uint32_t caps4;               // 116
+    uint32_t reserved2;           // 120
+} DDS_HEADER;
+
 // Load texture from DDS file with mip-maps. Returns true if successful.
 // nu_levels is a return parameter that returns the number of mipmap levels found.
 // textures_out is a return parameter for an array of detexTexture pointers that is allocated,
@@ -36,111 +82,80 @@ bool detexLoadDDSFileWithMipmaps(const char *filename,
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Could not open file %s", filename);
         return false;
     }
-    // Read signature.
-    char id[4];
-    size_t s = fread(id, 1, 4, f);
-    if (s != 4) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
+
+    DDS_HEADER header = {0};
+    DX10_HEADER dx10_header = {0};
+
+    if (fread(&header, 1, sizeof(DDS_HEADER), f) != sizeof(DDS_HEADER)) {
+        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DDS file header %s", filename);
         return false;
     }
-    if (id[0] != 'D' || id[1] != 'D' || id[2] != 'S' || id[3] != ' ') {
+
+    if (memcmp(header.magic, "DDS ", 4) != 0) {
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Couldn't find DDS signature");
         return false;
     }
-    uint8_t header[124];
-    s = fread(header, 1, 124, f);
-    if (s != 124) {
-        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
-        return false;
-    }
-    uint8_t *headerp = &header[0];
-    int width = *(uint32_t *)(headerp + 12);
-    int height = *(uint32_t *)(headerp + 8);
-    //	int pitch = *(uint32_t *)(headerp + 16);
-    int pixel_format_flags = *(uint32_t *)(headerp + 76);
-    int block_width = 4;
-    int block_height = 4;
-    int bitcount = *(uint32_t *)(headerp + 84);
-    uint32_t red_mask = *(uint32_t *)(headerp + 88);
-    uint32_t green_mask = *(uint32_t *)(headerp + 92);
-    uint32_t blue_mask = *(uint32_t *)(headerp + 96);
-    uint32_t alpha_mask = *(uint32_t *)(headerp + 100);
-    char four_cc[5];
-    strncpy(four_cc, (char *)&header[80], 4);
-    four_cc[4] = '\0';
-    uint32_t dx10_format = 0;
-    if (strncmp(four_cc, "DX10", 4) == 0) {
-        uint32_t dx10_header[5];
-        s = fread(dx10_header, 1, 20, f);
-        if (s != 20) {
-            detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
+
+    if (strncmp(header.pixelFormat.fourCC, "DX10", 4) == 0) {
+        if (fread(&dx10_header, 1, sizeof(DX10_HEADER), f) != sizeof(DX10_HEADER)) {
+            detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading DX10 header %s", filename);
             return false;
         }
-        dx10_format = dx10_header[0];
-        uint32_t resource_dimension = dx10_header[1];
-        if (resource_dimension != 3) {
+        if (dx10_header.resource_dimension != 3) {
             detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Only 2D textures supported for .dds files");
             return false;
         }
     }
-    const detexTextureFileInfo *info = detexLookupDDSFileInfo(
-        four_cc, dx10_format, pixel_format_flags, bitcount, red_mask, green_mask, blue_mask, alpha_mask);
+
+    const detexTextureFileInfo *info = detexLookupDDSFileInfo(header.pixelFormat.fourCC,
+                                                              dx10_header.format,
+                                                              header.pixelFormat.flags,
+                                                              header.pixelFormat.bitCountRGB,
+                                                              header.pixelFormat.bitMaskR,
+                                                              header.pixelFormat.bitMaskG,
+                                                              header.pixelFormat.bitMaskB,
+                                                              header.pixelFormat.bitMaskA);
     if (info == NULL) {
-        detexSetErrorMessage(
-            "detexLoadDDSFileWithMipmaps: Unsupported format in .dds file (fourCC = %s, "
-            "DX10 format = %d).",
-            four_cc,
-            dx10_format);
+        detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Unsupported format in .dds file (DX10 format = %d).",
+                             dx10_header.format);
         return false;
     }
-    // Maybe implement option to treat BC1 as BC1A?
-    int bytes_per_block;
-    if (detexFormatIsCompressed(info->texture_format))
-        bytes_per_block = detexGetCompressedBlockSize(info->texture_format);
-    else
-        bytes_per_block = detexGetPixelSize(info->texture_format);
-    block_width = info->block_width;
-    block_height = info->block_height;
-    int extended_width = ((width + block_width - 1) / block_width) * block_width;
-    int extended_height = ((height + block_height - 1) / block_height) * block_height;
-    uint32_t flags = *(uint32_t *)(headerp + 4);
-    int nu_file_mipmaps = 1;
-    if (flags & 0x20000) {
-        nu_file_mipmaps = *(uint32_t *)(headerp + 24);
-        //		if (nu_file_mipmaps > 1 && max_mipmaps == 1) {
-        //			detexSetErrorMessage("Disregarding mipmaps beyond the first level.\n");
-        //		}
-    }
-    int nu_mipmaps;
-    if (nu_file_mipmaps > max_mipmaps)
-        nu_mipmaps = max_mipmaps;
-    else
-        nu_mipmaps = nu_file_mipmaps;
-    detexTexture **textures = (detexTexture **)malloc(sizeof(detexTexture *) * nu_mipmaps);
+
+    int nu_file_mipmaps = (header.flags & DDS_HEADER_FLAGS_MIPMAP) ? header.mipMapCount : 1;
+    int nu_mipmaps = min(nu_file_mipmaps, max_mipmaps);
+    *nu_levels_out = nu_mipmaps;
+
+    detexTexture **textures = (detexTexture **)calloc(nu_mipmaps, sizeof(detexTexture *));
+    *textures_out = textures;
+
+    uint32_t bytes_per_block = detextBytesPerBlock(info->texture_format);
+    uint32_t block_width = info->block_width;
+    uint32_t block_height = info->block_height;
+    uint32_t current_width = header.width;
+    uint32_t current_height = header.height;
     for (int i = 0; i < nu_mipmaps; i++) {
-        int n = (extended_height / block_width) * (extended_width / block_height);
+        uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
+        uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, 1);
+        uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
         // Allocate texture.
         textures[i] = (detexTexture *)malloc(sizeof(detexTexture));
-        textures[i]->format = info->texture_format;
-        textures[i]->data = (uint8_t *)malloc(n * bytes_per_block);
-        textures[i]->width = width;
-        textures[i]->height = height;
-        textures[i]->width_in_blocks = extended_width / block_width;
-        textures[i]->height_in_blocks = extended_height / block_height;
-        size_t r = fread(textures[i]->data, 1, n * bytes_per_block, f);
-        if (r < n * bytes_per_block) {
+        *textures[i] = (detexTexture){
+            .format = info->texture_format,
+            .data = (uint8_t *)malloc(size),
+            .width = current_width,
+            .height = current_height,
+            .width_in_blocks = width_in_blocks,
+            .height_in_blocks = height_in_blocks,
+        };
+        if (fread(textures[i]->data, 1, size, f) != size) {
             detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Error reading file %s", filename);
             return false;
         }
         // Divide by two for the next mipmap level, rounding down.
-        width >>= 1;
-        height >>= 1;
-        extended_width = ((width + block_width - 1) / block_width) * block_width;
-        extended_height = ((height + block_height - 1) / block_height) * block_height;
+        current_width >>= 1;
+        current_height >>= 1;
     }
     fclose(f);
-    *nu_levels_out = nu_mipmaps;
-    *textures_out = textures;
     return true;
 }
 
