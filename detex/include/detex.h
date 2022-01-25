@@ -709,8 +709,14 @@ DETEX_API bool detexLoadTEXFileWithMipmaps(const char *filename,
                                            detexTexture ***textures_out,
                                            int *nu_levels_out);
 
+/* Load texture from DDS file (first mip-map only). Returns true if successful. */
+DETEX_API bool detexLoadTEXFile(const char *filename, detexTexture **texture_out);
+
 /* Save textures to TEX file (multiple mip-maps levels). Return true if succesful. */
 DETEX_API bool detexSaveTEXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename);
+
+/* Save texture to TEX file (single mip-map level). Returns true if succesful. */
+DETEX_API bool detexSaveTEXFile(detexTexture *texture, const char *filename);
 
 /* Load texture file (type autodetected from extension). */
 DETEX_API bool detexLoadTextureFile(const char *filename, detexTexture **texture_out);
