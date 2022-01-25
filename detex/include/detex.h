@@ -662,35 +662,35 @@ DETEX_API void detexConvertHDRFloatToFloat(float *buffer, int n);
 /* textures_out is a return parameter for an array of detexTexture pointers that is allocated, */
 /* free with free(). textures_out[i] are allocated textures corresponding to each level, free */
 /* with free().	 */
-DETEX_API bool detexLoadKTXFile(const char *filename,
+DETEX_API bool detexFileLoadKTX(const char *filename,
                                 int max_mipmaps,
                                 detexTexture ***textures_out,
                                 int *nu_levels_out);
 
 /* Save textures to KTX file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveKTXFile(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexFileSaveKTX(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Load texture from DDS file with mip-maps. Returns true if successful. */
 /* nu_levels is a return parameter that returns the number of mipmap levels found. */
 /* textures_out is a return parameter for an array of detexTexture pointers that is allocated, */
 /* free with free(). textures_out[i] are allocated textures corresponding to each level, free */
 /* with free(). */
-DETEX_API bool detexLoadDDSFile(const char *filename,
+DETEX_API bool detexFileLoadDDS(const char *filename,
                                 int max_mipmaps,
                                 detexTexture ***textures_out,
                                 int *nu_levels_out);
 
 /* Save textures to DDS file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveDDSFile(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexFileSaveDDS(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Load TEX file (multiple mip-maps levels). Returs true if succesful. */
-DETEX_API bool detexLoadTEXFile(const char *filename,
+DETEX_API bool detexFileLoadTEX(const char *filename,
                                 int max_mipmaps,
                                 detexTexture ***textures_out,
                                 int *nu_levels_out);
 
 /* Save textures to TEX file (multiple mip-maps levels). Return true if succesful. */
-DETEX_API bool detexSaveTEXFile(detexTexture **textures, int nu_levels, const char *filename);
+DETEX_API bool detexFileSaveTEX(detexTexture **textures, int nu_levels, const char *filename);
 
 /* Return pixel size in bytes for pixel format or texture format (decompressed). */
 DETEX_INLINE_ONLY int detexGetPixelSize(uint32_t pixel_format) { return 1 + ((pixel_format & 0xF00) >> 8); }

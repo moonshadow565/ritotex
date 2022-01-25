@@ -73,7 +73,7 @@ typedef struct {
 // textures_out is a return parameter for an array of detexTexture pointers that is allocated,
 // free with free(). textures_out[i] are allocated textures corresponding to each level, free
 // with free();
-bool detexLoadDDSFile(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
+bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *f = fopen(filename, "rb");
     if (f == NULL) {
         detexSetErrorMessage("detexLoadDDSFileWithMipmaps: Could not open file %s", filename);
@@ -157,7 +157,7 @@ bool detexLoadDDSFile(const char *filename, int max_mipmaps, detexTexture ***tex
 }
 
 // Save textures to DDS file (multiple mip-maps levels). Return true if succesful.
-bool detexSaveDDSFile(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexFileSaveDDS(detexTexture **textures, int nu_levels, const char *filename) {
     FILE *f = fopen(filename, "wb");
     if (f == NULL) {
         detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Could not open file %s for writing", filename);

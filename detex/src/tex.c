@@ -25,7 +25,7 @@ typedef struct {
     bool has_mipmaps;
 } TEX_HEADER;
 
-bool detexLoadTEXFile(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
+bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***textures_out, int *nu_levels_out) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
         detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Could not open file %s", filename);
@@ -111,7 +111,7 @@ bool detexLoadTEXFile(const char *filename, int max_mipmaps, detexTexture ***tex
     return true;
 }
 
-bool detexSaveTEXFile(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexFileSaveTEX(detexTexture **textures, int nu_levels, const char *filename) {
     TEX_HEADER header = {
         .magic = "TEX",
         .image_width = textures[0]->width,
