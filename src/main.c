@@ -208,6 +208,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!detexSaveTEXFileWithMipmaps(textures, nu_levels, out_filename)) {
                 return false;
             }
+            break;
         default:
             detexSetErrorMessage("Invalid output file type %d", out_file_type);
             return false;

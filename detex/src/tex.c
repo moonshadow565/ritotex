@@ -73,8 +73,8 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
 
     // TODO: log if clz method yields same result here
     // NOTE: this might actually be faster than clz
-    uint32_t count_mipmaps = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
-    uint32_t nu_levels = min(max_mipmaps, count_mipmaps);
+    int count_mipmaps = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
+    int nu_levels = min(max_mipmaps, count_mipmaps);
     *nu_levels_out = nu_levels;
     detexTexture **textures = malloc(nu_levels * sizeof(detexTexture *));
     *textures_out = textures;
@@ -125,26 +125,52 @@ bool detexLoadTEXFile(const char *filename, detexTexture **texture_out) {
 }
 
 bool detexSaveTEXFileWithMipmaps(detexTexture **textures, int nu_levels, const char *filename) {
-    FILE* tex_file = fopen(filename, "wb");
-    if (!tex_file) {
+    TEX_HEADER header = {
+        .magic = "TEX",
+        .image_width = textures[0]->width,
+        .image_height = textures[0]->height,
+        .unk1 = 1,
+        .tex_format = 0,
+        .has_mipmaps = nu_levels > 1,
+    };
+
+    int count_mipmaps = header.has_mipmaps ? floor(log2(max(header.image_height, header.image_width))) + 1.0 : 1;
+    if (count_mipmaps != nu_levels) {
+        detexSetErrorMessage(
+            "detexSaveTEXFileWithMipmaps: Mipmap count doesn't match, expected: %d, got: %d", count_mipmaps, nu_levels);
+        return false;
+    }
+
+    uint32_t format = textures[0]->format;
+    detexTextureFileInfo const *info = detexLookupTextureFormatFileInfo(format);
+    uint32_t bytes_per_block = detextBytesPerBlock(info->texture_format);
+
+    switch (format) {
+        case DETEX_TEXTURE_FORMAT_BC1:
+            header.tex_format = TEX_FORMAT_DXT1;
+            break;
+        case DETEX_TEXTURE_FORMAT_BC3:
+            header.tex_format = TEX_FORMAT_DXT5;
+            break;
+        default:
+            // FIXME: handle TEX_FORMAT_1, TEX_FORMAT_2 and TEX_FORMAT_3 here
+            detexSetErrorMessage("detexSaveTEXFileWithMipmaps: TEX doesn't support format %d", textures[0]->format);
+            return false;
+    }
+
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
         detexSetErrorMessage("detexSaveTEXFileWithMipmaps: Could not open file %s for writing", filename);
         return false;
     }
 
-    TEX_HEADER tex_header = {
-        .magic = "TEX",
-        .image_width = textures[nu_levels-1]->width,
-        .image_height = textures[nu_levels-1]->height,
-        .unk1 = 1,
-        .tex_format = textures[0]->format == DETEX_COMPRESSED_TEXTURE_FORMAT_INDEX_DXT5 ? 0xC : 0xA,
-        .has_mipmaps = nu_levels > 1
-    };
-    fwrite(&tex_header, sizeof(TEX_HEADER), 1, tex_file);
-    for (int i = nu_levels-1; i >= 0; i++) {
-        fwrite(textures[i]->data, 1, textures[i]->width * textures[i]->height, tex_file);
+    fwrite(&header, sizeof(TEX_HEADER), 1, file);
+    for (int i = nu_levels - 1; i >= 0; i--) {
+        uint32_t size = textures[i]->width_in_blocks * textures[i]->height_in_blocks * bytes_per_block;
+        fwrite(textures[i]->data, 1, size, file);
     }
 
-    fclose(tex_file);
+    fclose(file);
     return true;
 }
 
