@@ -8,7 +8,6 @@ add_library(detex STATIC
     src/bptc-tables.c
     src/clamp.c
     src/convert.c
-    src/dds.c
     src/decompress-bc.c
     src/decompress-bptc.c
     src/decompress-bptc-float.c
@@ -19,9 +18,10 @@ add_library(detex STATIC
     src/file-info.c
     src/half-float.c
     src/hdr.c
-    src/ktx.c
+    src/file-dds.c
+    src/file-ktx.c
+    src/file-tex.c
     src/misc.c
-    src/tex.c
     src/texture.c
 )
 target_include_directories(detex PUBLIC include/)
