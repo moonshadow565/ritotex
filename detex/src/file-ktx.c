@@ -190,7 +190,7 @@ static const char ktx_orientation_key_up[24] = {
 };
 
 // Save textures to KTX file (multiple mip-maps levels). Return true if succesful.
-bool detexFileSaveKTX(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexFileSaveKTX(const char *filename, detexTexture **textures, int nu_levels) {
     FILE *f = fopen(filename, "wb");
     if (f == NULL) {
         detexSetErrorMessage("detexSaveKTXFileWithMipmaps: Could not open file %s for writing", filename);

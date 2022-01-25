@@ -189,7 +189,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_ktx)) {
                 return false;
             }
-            if (!detexFileSaveKTX(textures, nu_levels, out_filename)) {
+            if (!detexFileSaveKTX(out_filename, textures, nu_levels)) {
                 return false;
             }
             break;
@@ -197,7 +197,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_dds)) {
                 return false;
             }
-            if (!detexFileSaveDDS(textures, nu_levels, out_filename)) {
+            if (!detexFileSaveDDS(out_filename, textures, nu_levels)) {
                 return false;
             }
             break;
@@ -205,7 +205,7 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_tex)) {
                 return false;
             }
-            if (!detexFileSaveTEX(textures, nu_levels, out_filename)) {
+            if (!detexFileSaveTEX(out_filename, textures, nu_levels)) {
                 return false;
             }
             break;

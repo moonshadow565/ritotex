@@ -157,7 +157,7 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
 }
 
 // Save textures to DDS file (multiple mip-maps levels). Return true if succesful.
-bool detexFileSaveDDS(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexFileSaveDDS(const char *filename, detexTexture **textures, int nu_levels) {
     FILE *f = fopen(filename, "wb");
     if (f == NULL) {
         detexSetErrorMessage("detexSaveDDSFileWithMipmaps: Could not open file %s for writing", filename);

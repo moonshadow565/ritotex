@@ -111,7 +111,7 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
     return true;
 }
 
-bool detexFileSaveTEX(detexTexture **textures, int nu_levels, const char *filename) {
+bool detexFileSaveTEX(const char *filename, detexTexture **textures, int nu_levels) {
     TEX_HEADER header = {
         .magic = "TEX",
         .image_width = textures[0]->width,
