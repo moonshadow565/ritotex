@@ -169,7 +169,10 @@ static bool read_textures(char* in_filename, detexTexture*** textures, int* nu_l
             }
             break;
         case FILE_TYPE_TEX:
-            // TODO: write TEX
+            if (!detexLoadTEXFileWithMipmaps(in_filename, 32, textures, nu_levels)) {
+                return false;
+            }
+            break;
         default:
             detexSetErrorMessage("Invalid input file type %d", in_file_type);
             return false;
@@ -202,7 +205,9 @@ static bool write_textures(char* out_filename, detexTexture** textures, int nu_l
             if (!convert_textures(textures, nu_levels, &format_for_tex)) {
                 return false;
             }
-            // TODO: write TEX
+            if (!detexSaveTEXFileWithMipmaps(textures, nu_levels, out_filename)) {
+                return false;
+            }
         default:
             detexSetErrorMessage("Invalid output file type %d", out_file_type);
             return false;

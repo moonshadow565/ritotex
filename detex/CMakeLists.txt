@@ -22,6 +22,7 @@ add_library(detex STATIC
     src/ktx.c
     src/misc.c
     src/raw.c
+    src/tex.c
     src/texture.c
 )
 target_include_directories(detex PUBLIC include/)
