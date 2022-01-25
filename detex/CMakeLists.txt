@@ -21,7 +21,6 @@ add_library(detex STATIC
     src/hdr.c
     src/ktx.c
     src/misc.c
-    src/raw.c
     src/tex.c
     src/texture.c
 )
