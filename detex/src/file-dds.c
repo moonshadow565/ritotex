@@ -148,9 +148,8 @@ bool detexFileLoadDDS(const char *filename, int max_mipmaps, detexTexture ***tex
             detexSetErrorMessage("detexFileLoadDDS: Error reading file %s", filename);
             return false;
         }
-        // Divide by two for the next mipmap level, rounding down.
-        current_width >>= 1;
-        current_height >>= 1;
+        current_width = max(current_width >> 1, 1);
+        current_height = max(current_height >> 1, 1);
     }
     fclose(file);
     return true;

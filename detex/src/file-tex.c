@@ -83,13 +83,10 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
         uint32_t width_in_blocks = max((current_width + block_width - 1) / block_width, 1);
         uint32_t height_in_blocks = max((current_height + block_height - 1) / block_height, 1);
         uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
-
-        // Read in texture
         if (fseek(file, -size, SEEK_CUR) != 0 || ftell(file) < sizeof(TEX_HEADER)) {
             detexSetErrorMessage("detexFileLoadTEX: Can't read texture %d", i);
             return false;
         }
-
         textures[i] = (detexTexture *)malloc(sizeof(detexTexture));
         *textures[i] = (detexTexture const){
             .format = format,
@@ -101,10 +98,8 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
         };
         fread(textures[i]->data, 1, size, file);
         fseek(file, -size, SEEK_CUR);
-
-        // Next texture
-        current_width >>= 1;
-        current_height >>= 1;
+        current_width = max(current_width >> 1, 1);
+        current_height = max(current_height >> 1, 1);
     }
     return true;
 }

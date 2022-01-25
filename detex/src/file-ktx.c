@@ -123,8 +123,8 @@ bool detexFileLoadKTX(const char *filename, int max_mipmaps, detexTexture ***tex
             return false;
         }
         // Divide by two for the next mipmap level, rounding down.
-        current_width >>= 1;
-        current_height >>= 1;
+        current_width = max(current_width >> 1, 1);
+        current_height = max(current_height >> 1, 1);
         uint32_t unaligned = size % 4;
         if (unaligned > 0) {
             fseek(file, 4 - unaligned, SEEK_CUR);
