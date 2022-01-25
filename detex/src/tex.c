@@ -90,7 +90,7 @@ bool detexLoadTEXFileWithMipmaps(const char *filename,
         uint32_t size = width_in_blocks * height_in_blocks * bytes_per_block;
 
         // Read in texture
-        if (fseek(file, -size, SEEK_CUR) != 0) {
+        if (fseek(file, -size, SEEK_CUR) != 0 || ftell(file) < sizeof(TEX_HEADER)) {
             detexSetErrorMessage("detexLoadTEXFileWithMipmaps: Can't read texture %d", i);
             return false;
         }
