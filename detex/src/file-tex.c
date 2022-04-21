@@ -5,14 +5,6 @@
 
 #include "detex.h"
 
-enum {
-    TEX_FORMAT_1 = 1,
-    TEX_FORMAT_2 = 2,
-    TEX_FORMAT_3 = 3,
-    TEX_FORMAT_DXT1 = 10,
-    TEX_FORMAT_DXT5 = 12,
-};
-
 typedef struct {
     uint8_t magic[4];
     uint16_t image_width;
@@ -45,16 +37,23 @@ bool detexFileLoadTEX(const char *filename, int max_mipmaps, detexTexture ***tex
 
     uint32_t format = DETEX_TEXTURE_FORMAT_BC1;
     switch (header.tex_format) {
+        case 1:
+            format = DETEX_TEXTURE_FORMAT_ETC1;
+            break;
+        case 2:
+            format = DETEX_TEXTURE_FORMAT_ETC2_EAC;
+            break;
+        // RGB_565 ?? case 3: break;
         case 10:
+        case 11:
             format = DETEX_TEXTURE_FORMAT_BC1;
             break;
         case 12:
             format = DETEX_TEXTURE_FORMAT_BC3;
             break;
-        case TEX_FORMAT_1:
-        case TEX_FORMAT_2:
-        case TEX_FORMAT_3:
-            // FIXME: figure what those are...
+        case 20:
+            format = DETEX_PIXEL_FORMAT_RGBA8;
+            break;
         default:
             // NOTE: technically riot handles all other formats as DXT1 ?????
             detexSetErrorMessage("detexFileLoadTEX: Unhandled TEX format %d", header.tex_format);
@@ -116,11 +115,20 @@ bool detexFileSaveTEX(const char *filename, detexTexture **textures, int nu_leve
 
     uint32_t format = textures[0]->format;
     switch (format) {
+        case DETEX_TEXTURE_FORMAT_ETC1:
+            header.tex_format = 1;
+            break;
+        case DETEX_TEXTURE_FORMAT_ETC2_EAC:
+            header.tex_format = 2;
+            break;
         case DETEX_TEXTURE_FORMAT_BC1:
-            header.tex_format = TEX_FORMAT_DXT1;
+            header.tex_format = 10;
             break;
         case DETEX_TEXTURE_FORMAT_BC3:
-            header.tex_format = TEX_FORMAT_DXT5;
+            header.tex_format = 12;
+            break;
+        case DETEX_PIXEL_FORMAT_RGBA8:
+            header.tex_format = 20;
             break;
         default:
             // FIXME: handle TEX_FORMAT_1, TEX_FORMAT_2 and TEX_FORMAT_3 here

@@ -112,17 +112,11 @@ static uint32_t format_for_ktx(uint32_t format) {
 static uint32_t format_for_tex(uint32_t format) {
     switch (format) {
         case DETEX_TEXTURE_FORMAT_BC1:
-        case DETEX_TEXTURE_FORMAT_BC2:
+        // case DETEX_TEXTURE_FORMAT_BC2:
         case DETEX_TEXTURE_FORMAT_BC3:
             return format;
         default:
-            format = detexGetPixelFormat(format);
-            break;
-    }
-    if (detexFormatHasAlpha(format)) {
-        return DETEX_PIXEL_FORMAT_BGRA8;
-    } else {
-        return DETEX_PIXEL_FORMAT_BGR8;
+            return DETEX_PIXEL_FORMAT_RGBA8;
     }
 }
 
